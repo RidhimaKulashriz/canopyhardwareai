@@ -1,8 +1,11 @@
 ﻿google-generativeai
 openai
 langchain
+langchain-core
+langchain-openai
 fastapi
 uvicorn
 streamlit
 pandas
 numpy
+python-dotenv
