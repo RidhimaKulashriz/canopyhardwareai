@@ -1,8 +1,0 @@
-﻿import time
-import subprocess
-
-while True:
-    print("Starting AI agent run...")
-    subprocess.run(["python", "main.py"])
-    print("Agent run completed. Waiting 60 seconds...")
-    time.sleep(60)

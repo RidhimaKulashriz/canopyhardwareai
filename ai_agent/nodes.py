@@ -2,9 +2,10 @@
 from .state import AgentState
 from .config import config
 import os
+from datetime import datetime
 
-# YOUR DIRECT API KEY
-API_KEY = "AIzaSyBl6X_pyHH6HLnzrA9W1emEP5M1jrYxdK0"
+# Get API key from config
+API_KEY = config.GEMINI_API_KEY
 
 # Try to import Gemini
 try:
@@ -13,29 +14,26 @@ try:
     if API_KEY:
         genai.configure(api_key=API_KEY)
         
-        # Use the latest stable model from the list
         MODEL_NAME = 'models/gemini-2.5-flash'
         
         try:
             model = genai.GenerativeModel(MODEL_NAME)
-            # Test the model
             test_response = model.generate_content("Say OK")
-            print(f"✓ Gemini AI initialized successfully with {MODEL_NAME}!")
-            print(f"  Test response: {test_response.text}")
+            print("Gemini AI initialized successfully with", MODEL_NAME)
+            print("Test response:", test_response.text)
         except Exception as e:
-            print(f"Error with {MODEL_NAME}: {e}")
-            # Fallback to another model
+            print("Error with", MODEL_NAME, ":", e)
             try:
                 model = genai.GenerativeModel('models/gemini-2.0-flash')
                 test_response = model.generate_content("Say OK")
-                print(f"✓ Using fallback model: models/gemini-2.0-flash")
+                print("Using fallback model: models/gemini-2.0-flash")
             except:
                 model = None
                 print("No working model found. Using mock responses.")
         
 except Exception as e:
     model = None
-    print(f"Error loading Gemini: {e}")
+    print("Error loading Gemini:", e)
     print("Using mock responses instead.")
 
 def create_llm():
@@ -52,14 +50,14 @@ def process_sensor_data(state: AgentState) -> Dict[str, Any]:
             'type': 'critical_obstacle',
             'severity': 'high',
             'message': f'CRITICAL: Obstacle at {distance:.1f}m! STOP immediately!',
-            'timestamp': sensor['timestamp']
+            'timestamp': sensor.get('timestamp', datetime.now())
         })
     elif distance < config.ALERT_THRESHOLD_DISTANCE:
         alerts.append({
             'type': 'warning_obstacle',
             'severity': 'medium',
             'message': f'WARNING: Object detected at {distance:.1f}m',
-            'timestamp': sensor['timestamp']
+            'timestamp': sensor.get('timestamp', datetime.now())
         })
     
     accel = sensor.get('acceleration', 0)
@@ -68,7 +66,7 @@ def process_sensor_data(state: AgentState) -> Dict[str, Any]:
             'type': 'fall_detected',
             'severity': 'high',
             'message': 'FALL DETECTED! Emergency services alerted!',
-            'timestamp': sensor['timestamp']
+            'timestamp': sensor.get('timestamp', datetime.now())
         })
     
     return {'alerts': alerts}
@@ -93,17 +91,15 @@ Current sensor data:
 Provide short, clear, and actionable voice guidance (2-3 sentences max). Be calm and supportive.
 """
     
-    # Try using Gemini
     if model:
         try:
             response = model.generate_content(prompt)
             ai_response = response.text
-            print(f"✓ AI Response generated using Gemini")
+            print("AI Response generated using Gemini")
         except Exception as e:
-            print(f"Gemini error: {e}")
+            print("Gemini error:", e)
             ai_response = f"AI temporarily unavailable. Current status: {alert_messages[0] if alert_messages else 'Path appears clear'}"
     else:
-        # Enhanced mock responses
         if any('critical' in a['type'] for a in alerts):
             ai_response = f"Emergency! Obstacle at {distance:.1f} meters. Stop immediately and check your surroundings."
         elif any('warning' in a['type'] for a in alerts):
